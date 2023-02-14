@@ -29,7 +29,44 @@ def gravity_comp(model, data):
 def force_control(model, data):
 
     # Copy the code that you used to implement the controller from Part1 here
+    # Implement a force control callback here that generates a force of 15 N along the global x-axis,
+    # i.e. the x-axis of the robot arm base. You can use the comments as prompts or use your own flow
+    # of code. The comments are simply meant to be a reference.
 
+    
+    # Instantite a handle to the desired body on the robot
+    body = data.body("hand")
+
+    # Get the Jacobian for the desired location on the robot (The end-effector)
+    jacp = np.zeros(shape=(3, 8)) # position 
+    jacr = np.zeros(shape=(3, 8)) # rotation
+
+    mj.mj_jacBody(model, data, jacp, jacr, body.id)
+
+    J = np.vstack((jacp, jacr))[:, :7]
+
+    # This function works by taking in return parameters!!! Make sure you supply it with placeholder
+    # variables
+
+    # Specify the desired force in global coordinates
+    wrench_des = np.transpose(np.array([15, 0, 0, 0, 0, 0]))
+
+    # Compute the required control input using desied force values
+    torque_des = np.transpose(J) @ wrench_des
+
+    # Set the control inputs
+    data.ctrl[:7] = torque_des+data.qfrc_bias[:7]
+
+    # DO NOT CHANGE ANY THING BELOW THIS IN THIS FUNCTION
+
+    # Force readings updated here
+    force[:] = np.roll(force, -1)[:]
+    force[-1] = data.sensordata[2]
+
+    #! print to verify!
+    # y = R.from_quat(data.body("hand").xquat)
+    # print(y.as_rotvec())
+    print(force[-1])
     
     # DO NOT CHANGE ANY THING BELOW THIS IN THIS FUNCTION
 
@@ -44,7 +81,58 @@ def force_control(model, data):
 def impedance_control(model, data):
 
     # Copy the code that you used to implement the controller from Part1 here
+    # Instantite a handle to the desired body on the robot
+    body = data.body("hand")
 
+    # desired position
+    des_pos = np.hstack([0.59526372 + 0.5, 0.00142708, 0.59519669, 0,0,0])
+    # des_pos = np.hstack([0.59526372 + 0.5, 0.00142708, 0.59519669, -1.21370776,  1.20642624, -1.21263634])
+    
+    # current position (cartestian & orientation)
+    # orientation
+    curr_quat = data.body("hand").xquat
+    # rot = R.from_quat(curr_quat)
+    curr_rot = np.array([0,0,0]) #rot.as_rotvec()
+
+    curr_pos = np.hstack((data.body("hand").xpos, curr_rot))
+
+    #- Set the desired velocities
+    des_vel = np.array([0,0,0,0,0,0]).T
+
+    # current vel
+    curr_vel = np.zeros(shape=(6))
+    mj.mj_objectVelocity(model, data, mj.mjtObj.mjOBJ_BODY, 7, curr_vel, True)
+
+    # errors
+    vel_err = des_vel - curr_vel
+    pos_err = des_pos - curr_pos
+
+    # Get the Jacobian at the desired location on the robot
+    # This function works by taking in return parameters!!! Make sure you supply it with placeholder
+    # variables
+    jacp = np.zeros(shape=(3, 8)) # position 
+    jacr = np.zeros(shape=(3, 8)) # rotation
+
+    mj.mj_jacBody(model, data, jacp, jacr, body.id)
+
+    J = np.vstack((jacp, jacr))[:, :7]
+
+    # Compute the impedance control input torques
+    Kp = 30
+    Kd = 10
+    
+    # Set the control inputs
+    # print(np.shape(des_vel), np.shape(curr_vel))
+    data.ctrl[:7] = data.qfrc_bias[:7] + J.T @ (Kp * (pos_err) + Kd*(vel_err))
+
+    # DO NOT CHANGE ANY THING BELOW THIS IN THIS FUNCTION
+
+    # Update force sensor readings
+    force[:] = np.roll(force, -1)[:]
+    force[-1] = data.sensordata[2]
+
+    #! print to verify!
+    print(force[-1])
 
     # DO NOT CHANGE ANY THING BELOW THIS IN THIS FUNCTION
 
@@ -100,7 +188,7 @@ if __name__ == "__main__":
     # compensation callback has been implemented for you. Run the file and play with the model as
     # explained in the PDF
 
-    mj.set_mjcb_control(gravity_comp) #TODO:
+    mj.set_mjcb_control(impedance_control) #TODO:
 
     ################################# Swap Callback Above This Line #################################
 
