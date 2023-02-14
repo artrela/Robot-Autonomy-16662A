@@ -27,29 +27,36 @@ def force_control(model, data): #TODO:
     # of code. The comments are simply meant to be a reference.
 
     # Instantite a handle to the desired body on the robot
-
+    body = data.body("hand")
 
     # Get the Jacobian for the desired location on the robot (The end-effector)
+    jacp = np.zeros(shape=(3, 7)) # position 
+    jacr = np.zeros(shape=(3, 7)) # rotation
 
+    mj.mj_jacBody(model, data, jacp, jacr, body.id)
+
+    J = np.vstack((jacp, jacr))
 
     # This function works by taking in return parameters!!! Make sure you supply it with placeholder
     # variables
 
-
     # Specify the desired force in global coordinates
-
+    wrench_des = np.transpose(np.array([15, 0, 0, 0, 0, 0]))
 
     # Compute the required control input using desied force values
-
+    torque_des = np.transpose(J) @ wrench_des
 
     # Set the control inputs
-
+    data.ctrl[:7] = torque_des+data.qfrc_bias[:7]
 
     # DO NOT CHANGE ANY THING BELOW THIS IN THIS FUNCTION
 
     # Force readings updated here
     force[:] = np.roll(force, -1)[:]
     force[-1] = data.sensordata[2]
+
+    #! print to verify!
+    print(force[-1]) 
     
 # Control callback for an impedance controller
 def impedance_control(model, data): #TODO:
@@ -59,7 +66,7 @@ def impedance_control(model, data): #TODO:
     # of code. The comments are simply meant to be a reference.
 
     # Instantite a handle to the desired body on the robot
-
+    
 
     # Set the desired position
 
@@ -139,7 +146,7 @@ if __name__ == "__main__":
     # compensation callback has been implemented for you. Run the file and play with the model as
     # explained in the PDF
 
-    mj.set_mjcb_control(gravity_comp) #TODO:
+    mj.set_mjcb_control(force_control) #TODO:
 
     ################################# Swap Callback Above This Line #################################
 
