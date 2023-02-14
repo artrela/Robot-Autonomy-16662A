@@ -56,7 +56,7 @@ def force_control(model, data): #TODO:
     force[-1] = data.sensordata[2]
 
     #! print to verify!
-    print(force[-1]) 
+    print(data.body("hand").xpos)
     
 # Control callback for an impedance controller
 def impedance_control(model, data): #TODO:
@@ -66,44 +66,55 @@ def impedance_control(model, data): #TODO:
     # of code. The comments are simply meant to be a reference.
 
     # Instantite a handle to the desired body on the robot
+    body = data.body("hand")
+
+    # desired position
+    des_pos = np.array([0.59526372 + 0.5, 0.00142708, 0.59519669, 0, 0, 0])
     
+    # current position (cartestian & orientation)
+    # orientation
+    curr_ang = data.body("hand").xquat
+    curr_ang = np.array([0,0,0]) #quaternion.as_rotation_vector(curr_ang)
 
-    # Set the desired position
+    curr_pos = np.hstack((data.body("hand").xpos, curr_ang))
 
+    #- Set the desired velocities
+    des_vel = np.array([0,0,0,0,0,0]).T
 
-    # Set the desired velocities
+    # current vel
+    curr_vel = np.zeros(shape=(6))
+    mj.mj_objectVelocity(model, data, mj.mjtObj.mjOBJ_BODY, 7, curr_vel, True)
 
-
-    # Set the desired orientation (Use numpy quaternion manipulation functions)
-
-
-    # Get the current orientation
-
-
-    # Get orientation error
-
-
-    # Get the position error
-
+    # errors
+    vel_err = des_vel - curr_vel
+    pos_err = des_pos - curr_pos
 
     # Get the Jacobian at the desired location on the robot
-
-
     # This function works by taking in return parameters!!! Make sure you supply it with placeholder
     # variables
+    jacp = np.zeros(shape=(3, 7)) # position 
+    jacr = np.zeros(shape=(3, 7)) # rotation
 
+    mj.mj_jacBody(model, data, jacp, jacr, body.id)
+
+    J = np.vstack((jacp, jacr))
 
     # Compute the impedance control input torques
-
-
+    Kp = 30
+    Kd = 10
+    
     # Set the control inputs
-
+    # print(np.shape(des_vel), np.shape(curr_vel))
+    data.ctrl[:7] = data.qfrc_bias[:7] + J.T @ (Kp * (pos_err) + Kd*(vel_err))
 
     # DO NOT CHANGE ANY THING BELOW THIS IN THIS FUNCTION
 
     # Update force sensor readings
     force[:] = np.roll(force, -1)[:]
     force[-1] = data.sensordata[2]
+
+    #! print to verify!
+    print(force[-1])
     
 
 def position_control(model, data):
@@ -124,7 +135,7 @@ def position_control(model, data):
     Kd = 1000
 
     # Set the actuator control torques
-    data.ctrl[:7] = data.qfrc_bias[:7] + Kp*(desired_joint_positions-data.qpos[:7]) + Kd*(np.array([0,0,0,0,0,0,0])-data.qvel[:7])
+    data.ctrl[:7] = data.qfrc_bias[:7] + (Kp*(desired_joint_positions-data.qpos[:7]) + Kd*(np.array([0,0,0,0,0,0,0])-data.qvel[:7]))
 
 
 
@@ -146,7 +157,7 @@ if __name__ == "__main__":
     # compensation callback has been implemented for you. Run the file and play with the model as
     # explained in the PDF
 
-    mj.set_mjcb_control(force_control) #TODO:
+    mj.set_mjcb_control(impedance_control) #TODO:
 
     ################################# Swap Callback Above This Line #################################
 
