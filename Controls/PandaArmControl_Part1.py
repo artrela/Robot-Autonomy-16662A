@@ -3,6 +3,7 @@ from mujoco import viewer
 import numpy as np
 import math
 import quaternion
+from scipy.spatial.transform import Rotation as R
 
 
 # Set the XML filepath
@@ -56,7 +57,8 @@ def force_control(model, data): #TODO:
     force[-1] = data.sensordata[2]
 
     #! print to verify!
-    print(data.body("hand").xpos)
+    y = R.from_quat(data.body("hand").xquat)
+    print(y.as_rotvec())
     
 # Control callback for an impedance controller
 def impedance_control(model, data): #TODO:
@@ -69,14 +71,16 @@ def impedance_control(model, data): #TODO:
     body = data.body("hand")
 
     # desired position
-    des_pos = np.array([0.59526372 + 0.5, 0.00142708, 0.59519669, 0, 0, 0])
+    des_pos = np.hstack([0.59526372 + 0.5, 0.00142708, 0.59519669, 0,0,0])
+    # des_pos = np.hstack([0.59526372 + 0.5, 0.00142708, 0.59519669, -1.21370776,  1.20642624, -1.21263634])
     
     # current position (cartestian & orientation)
     # orientation
-    curr_ang = data.body("hand").xquat
-    curr_ang = np.array([0,0,0]) #quaternion.as_rotation_vector(curr_ang)
+    curr_quat = data.body("hand").xquat
+    # rot = R.from_quat(curr_quat)
+    curr_rot = np.array([0,0,0]) #rot.as_rotvec()
 
-    curr_pos = np.hstack((data.body("hand").xpos, curr_ang))
+    curr_pos = np.hstack((data.body("hand").xpos, curr_rot))
 
     #- Set the desired velocities
     des_vel = np.array([0,0,0,0,0,0]).T
