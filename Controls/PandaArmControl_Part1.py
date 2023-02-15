@@ -76,11 +76,11 @@ def impedance_control(model, data): #TODO:
     
     # current position (cartestian & orientation)
     # orientation
-    # curr_ang = data.body("hand").xquat
-    # curr_ang = R.from_quat(curr_ang)
-    curr_ang = np.array([0,0,0]) # curr_ang.as_rotvec()
+    curr_quat = data.body("hand").xquat
+    # rot = R.from_quat(curr_quat)
+    curr_rot = np.array([0,0,0]) #rot.as_rotvec()
 
-    curr_pos = np.hstack((data.body("hand").xpos, curr_ang))
+    curr_pos = np.hstack((data.body("hand").xpos, curr_rot))
 
     #- Set the desired velocities
     des_vel = np.array([0,0,0,0,0,0]).T
