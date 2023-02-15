@@ -117,7 +117,6 @@ def impedance_control(model, data):
     des_vel = np.array([0,0,0,0,0,0]).T
 
     # current vel
-    curr_vel = np.zeros(shape=(6))
     mj.mj_objectVelocity(model, data, mj.mjtObj.mjOBJ_BODY, 7, curr_vel, True)
 
     # errors
