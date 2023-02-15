@@ -3,6 +3,7 @@ from mujoco import viewer
 import numpy as np
 import math
 import quaternion
+from scipy.spatial.transform.rotation import Rotation as R
 
 
 # Set the XML filepath
@@ -79,22 +80,38 @@ def force_control(model, data):
     
 # Control callback for an impedance controller
 def impedance_control(model, data):
+    """Run impedance control
 
-    # Copy the code that you used to implement the controller from Part1 here
-    # Instantite a handle to the desired body on the robot
+    Args:
+        model : mucojo model values
+        data : link & body data for mucojo model
+
+    1. Set the gains for the controller
+    2. create an object to access the hand data
+    3. obtain the curr hand orientation -> translate to axis-angle 
+    4. stack the position and orientation vectors 
+    5. 
+    """
+
+    # 1
+    Kp = 30
+    Kd = 4
+
+    # 2
     body = data.body("hand")
-
-    # desired position
-    des_pos = np.hstack([0.59526372 + 0.5, 0.00142708, 0.59519669, 0,0,0])
-    # des_pos = np.hstack([0.59526372 + 0.5, 0.00142708, 0.59519669, -1.21370776,  1.20642624, -1.21263634])
     
-    # current position (cartestian & orientation)
-    # orientation
+    # 3 
     curr_quat = data.body("hand").xquat
-    # rot = R.from_quat(curr_quat)
-    curr_rot = np.array([0,0,0]) #rot.as_rotvec()
+    rot = R.from_quat(curr_quat)
+    curr_rot = rot.as_rotvec()
 
+    # 4 
     curr_pos = np.hstack((data.body("hand").xpos, curr_rot))
+    force_des = np.transpose(np.array([15, 0, 0, 0, 0, 0]))
+
+    # 5
+    des_pos = (force_des / Kp) + curr_pos
+  
 
     #- Set the desired velocities
     des_vel = np.array([0,0,0,0,0,0]).T
@@ -117,10 +134,6 @@ def impedance_control(model, data):
 
     J = np.vstack((jacp, jacr))[:, :7]
 
-    # Compute the impedance control input torques
-    Kp = 30
-    Kd = 10
-    
     # Set the control inputs
     # print(np.shape(des_vel), np.shape(curr_vel))
     data.ctrl[:7] = data.qfrc_bias[:7] + J.T @ (Kp * (pos_err) + Kd*(vel_err))
