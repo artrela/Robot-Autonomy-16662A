@@ -70,6 +70,7 @@ class FrankArm:
 		'''
 
 		self.q[0:-1]=ang
+
 		
 		for i in range(len(self.q)):
 			# 1
@@ -99,6 +100,7 @@ class FrankArm:
 		Error in your IK solution compared to the desired target
 
 		1. Create weight and cost
+			- also init fk real quick
 		2. init error vals
 		3. check if either error is too high
 		4. find the rotation error
@@ -115,7 +117,13 @@ class FrankArm:
 		W = np.diag([1, 1, 100, 100, 1, 1, 100])
 		W[-1, 0] = 1
 		C = np.diag([1000000, 1000000, 1000000, 1000, 1000, 1000])
+
+		#! Corrected from submission
+		#! Add one iteration of FK before IK 
+		#! Sets joints at proper starting points
 		self.q[0:-1] = ang
+		self.ForwardKin(self.q[0:-1])
+
 
 		# 2
 		Err = np.ones(6) * np.inf
@@ -157,5 +165,7 @@ class FrankArm:
 
 			# 12 
 			self.ForwardKin(self.q[0:-1])
+
+		print(f"Jacobian: {self.J} | ")
 
 		return self.q[0:-1], Err
