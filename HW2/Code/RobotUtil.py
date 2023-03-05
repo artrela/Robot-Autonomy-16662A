@@ -60,62 +60,52 @@ def BlockDesc2Points(H, Dim):
 
 def CheckPointOverlap(pointsA,pointsB,axis):	
 	# TODO: check if sets of points projected on axis are overlapping
-
-	print("Shape of A:", pointsA.shape)
-	print("Shape of B:", pointsB.shape)
-	print("Shape of axis:", axis.shape)
-
-	print(A)
-
-	
-
-	status = False
-
+# convert the points to np arrays
 	pointsA = np.asarray(pointsA)
 	pointsB = np.asarray(pointsB)
 
-	# print("Shape of A:", pointsA.shape)
-	# print("Shape of B:", pointsB.shape)
+	# proj of u onto v = dot(u, v) * (v / mag(v))
+	# the second term int the unit vector 
+	unit_vec_axis = axis/np.linalg.norm(axis)
 
-	# print("Points A:", pointsA)
-	# print("Points B:", pointsB)
-	# print("Axis:", axis)
+	# find the proj of A/B onto the axis
+	proj_A2axis = np.multiply(np.dot(pointsA, axis), np.expand_dims(unit_vec_axis, axis=1))
+	proj_B2axis = np.multiply(np.dot(pointsB, axis), np.expand_dims(unit_vec_axis, axis=1))
 
-	# print(np.linalg.norm(axis))
+	# Conditions for failing
+	# 1. smallest A is greater than greated B (x_axis)
+	smallA_greatestB_x = np.min(proj_A2axis[0, :]) > np.max(proj_B2axis[0, :])
+	# 2. largest A is smaller than smallest B (x_axis)
+	largestA_smallestB_x = np.max(proj_A2axis[0, :]) < np.min(proj_B2axis[0, :])
+	# 3. smallest A is greater than greated B (y_axis)
+	smallA_greatestB_y = np.min(proj_A2axis[1, :]) > np.max(proj_B2axis[1, :])
+	# 4. largest A is smaller than smallest B (y_axis)
+	largestA_smallestB_y = np.max(proj_A2axis[1, :]) < np.min(proj_B2axis[1, :])
+	# 5. smallest A is greater than greated B (z_axis)
+	smallA_greatestB_z = np.min(proj_A2axis[2, :]) > np.max(proj_B2axis[2, :])
+	# 6. largest A is smaller than smallest B (z_axis)
+	largestA_smallestB_z = np.max(proj_A2axis[2, :]) < np.min(proj_B2axis[2, :])
 
-	norm_axis = axis/np.linalg.norm(axis)
-	projectionA_scals = np.dot(axis, pointsA.T)
-	project_axis = np.column_stack((norm_axis,norm_axis,norm_axis,norm_axis,norm_axis,norm_axis,norm_axis,norm_axis,norm_axis))
-	
-	projectionA = project_axis*projectionA_scals
-
-	projectionB_scals = np.dot(axis, pointsB.T)
-
-	projectionB = project_axis*projectionB_scals
-
-
-
-	# print("Projected Shape of A:", projectionA.shape)
-
-	if (np.min(projectionA[0,:])>np.max(projectionB[0,:]) or np.max(projectionA[0,:])<np.min(projectionB[0,:])) or (np.min(projectionA[1,:])>np.max(projectionB[1,:]) or np.max(projectionA[1,:])<np.min(projectionB[1,:])) or (np.min(projectionA[2,:])>np.max(projectionB[2,:]) or np.max(projectionA[2,:])<np.min(projectionB[2,:])):
-		# print("There is a separation")
-		# print("Points A:", pointsA)
-		# print("Points B:", pointsB)
-
-		# print("Points projected on axis", axis)
-		# print("Projected Points A:", projectionA)
-		# print("Projected Points B:", projectionB)
-		
+	# x-axis overlap
+	if smallA_greatestB_x or largestA_smallestB_x:
 		return False
-			
+	# y-axis overlap
+	elif smallA_greatestB_y or largestA_smallestB_y:
+		return False
+	# z-axis overlap
+	elif smallA_greatestB_z or largestA_smallestB_z:
+		return False
+	else:	
+		return True
 
-	return True
+
 
 
 
 def CheckBoxBoxCollision(pointsA,axesA,pointsB,axesB):	
-	#Sphere check
-	
+
+	# Meaning: if the difference between the centers is greater than the distance between the
+	# sum of half of the diagonal of the cuboid, it cannot be in collision. Basically make a sphere around the cuboids defined 
 	if np.linalg.norm(pointsA[0]-pointsB[0])> (np.linalg.norm(pointsA[0]-pointsA[1])+np.linalg.norm(pointsB[0]-pointsB[1])):
 		return False
 
