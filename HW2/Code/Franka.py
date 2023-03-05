@@ -289,6 +289,7 @@ class FrankArm:
 			self.Tcoll[i]=np.matmul(self.Tcurr[link-1], self.Tblock[i])
 			self.Cpoints[i],self.Caxes[i]=rt.BlockDesc2Points(self.Tcoll[i], self.Cdim[i])
 			# print(self.Tcoll[i])
+
 		
 	def DetectCollision(self, ang, pointsObs, axesObs):		
 		self.CompCollisionBlockPoints(ang)
@@ -356,3 +357,47 @@ class FrankArm:
 
 		plt.show()
 		return fig, ax
+	
+#todo ================================================================================
+
+arm = FrankArm()
+
+# reference cuboid
+ref_cuboid = [(0, 0, 0), (0, 0, 0), (3, 2, 1)]
+H = rt.rpyxyz2H(rpy=ref_cuboid[1], xyz=ref_cuboid[0])
+ref_cuboid_corners, ref_cuboid_axes = rt.BlockDesc2Points(H, Dim=ref_cuboid[2])
+
+# test cases: xyz, rpy, dim
+test_cases = [
+			[(0, 1, 0), (0, 0, 0), (0.8, 0.8, 0.8)],
+			[(1.5, -1.5, 0), (1, 0, 1.5), (1, 3, 3)],
+			[(0, 0, -1), (0, 0, 0), (2, 3, 1)],
+			[(3, 0, 0), (0, 0, 0), (3, 1, 1)],
+			[(-1, 0, -2), (0.5, 0, 0.4), (2, 0.7, 2)],
+			[(1.8, 0.5, 1.5), (-0.2, 0.5, 0), (1, 3, 1)],
+			[(0, -1.2, 0.4), (0, 0.785, 0.785), (1, 1, 1)],
+			[(-0.8, 0, -0.5), (0, 0, 0.2), (1, 0.5, 0.5)],
+			]
+
+# for each test test, detect a collision with the reference cuboid
+for i in range(len(test_cases)):
+	# change the rpy, xyz to a HTM
+	H = rt.rpyxyz2H(rpy=test_cases[i][1], xyz=test_cases[i][0])
+	# use the HTM & dims to turn the block to points & axes
+	case_corners, case_axes = rt.BlockDesc2Points(H, Dim=test_cases[i][2])
+	# use the corners & axes to Check box to box collisions
+	collision = rt.CheckBoxBoxCollision(ref_cuboid_corners, ref_cuboid_axes, case_corners, case_axes)
+	print(f"Test Case {i+1} Collision: {collision}")
+
+# pointsObs = []
+# for i in range(len(test_cases)):
+# 	H = rt.rpyxyz2H(rpy=test_cases[i][0], xyz=test_cases[i][1])
+# 	corners, axes = rt.BlockDesc2Points(H, test_cases[i][2])
+# 	pointsObs.append(np.asarray(corners))
+
+# for i in range(len(test_cases)):
+# 	arm.DetectCollision(arm.q[0:-1], test_cases)
+# 	print(f"Test Case: {str()}")
+
+
+# arm.PlotCollisionBlockPoints(arm.q[0:-1], pointsObs)
