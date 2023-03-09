@@ -46,6 +46,23 @@ def PRMGenerator():
 	while len(prmVertices)<1000:
 		# sample random poses
 		print(len(prmVertices))
+
+		# first, sample the configuration space
+		q = mybot.SampleRobotConfig()
+
+		# see if that state is colliding with anything
+		if not mybot.DetectCollision(q, pointsObs, axesObs):
+			prmVertices.append(q)
+
+			# next 3 lines: nearest neighbors within 2 units
+			prmEdges.append([])
+			for j in range(len(prmVertices)-1):
+				d_q2verts = np.asarray(prmVertices[-1]) - np.asarray(prmVertices[j])
+				if np.linalg.norm(d_q2verts) < 2:
+					# now, for the neighboring points, check if a collision exists along the edge
+					if not mybot.DetectCollisionEdge(prmVertices[-1], prmVertices[j], pointsObs, axesObs):
+						prmEdges[-1].append(j)
+						prmEdges[j].append(len(prmVertices)-1)
 		
 
 
