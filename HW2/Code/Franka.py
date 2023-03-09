@@ -360,10 +360,10 @@ class FrankArm:
 	
 #todo ================================================================================
 
-arm = FrankArm()
+# arm = FrankArm()
 
 # reference cuboid
-ref_cuboid = [(0, 0, 0), (0, 0, 0), (3, 2, 1)]
+ref_cuboid = [(0, 0, 0), (0, 0, 0), (3, 1, 2)]
 H = rt.rpyxyz2H(rpy=ref_cuboid[1], xyz=ref_cuboid[0])
 ref_cuboid_corners, ref_cuboid_axes = rt.BlockDesc2Points(H, Dim=ref_cuboid[2])
 
@@ -400,4 +400,4 @@ for i in range(len(test_cases)):
 # 	print(f"Test Case: {str()}")
 
 
-# arm.PlotCollisionBlockPoints(arm.q[0:-1], pointsObs)
+# arm.PlotCollisionBlockPoints(arm.q[0:-1]) #, pointsObs)
