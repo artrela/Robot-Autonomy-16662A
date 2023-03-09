@@ -119,11 +119,55 @@ def RRTQuery():
 		# Fill in the algorithm here
 
 		print(len(rrtVertices))
+
+		# sample the joint space: our joint space is between -pi -> pi with 7 joints #! verify this
+		qRand = mybot.SampleRobotConfig()
+
+		#! Goal Bias: for a small prob, switch qRand with qGoal
+		if np.random.uniform(0, 1) < thresh:
+			qRand = qGoal
+
+		# find out which node this same is nearest to
+		idNear = FindNearest(rrtVertices, qRand)
+		qNear = rrtVertices[idNear]
+
+		# convert to np arrays
+		qNear, qRand = np.asarray(qNear), np.asarray(qRand)
+
+		# if the length between this random point and neighbor is too long, 
+		# keep extending towards qRand and stop if there is a collision
+		while np.linalg.norm(qRand - qNear) > thresh:
+			
+			# find incremental step length
+			# delta_q is 
+			delta_q = (thresh * (qRand - qNear) / np.linalg.norm(qRand - qNear)  ) #! how is this delta_q
+			qConnect = qNear + delta_q
+
+			# if there is no collision, update the edge & vertices with qConnect
+			if not mybot.DetectCollisionEdge(qConnect, qNear, pointsObs, axesObs):
+				rrtVertices.append(qConnect)
+				rrtEdges.append(idNear)
+				qNear = qConnect
+			# if there is a collision, break
+			else:
+				break 
+
+		#! ???
+		qConnect = qRand
+		if not mybot.DetectCollisionEdge(qConnect, qNear, pointsObs, axesObs):
+			rrtVertices.append(qConnect)
+			rrtEdges.append(idNear)
 		
-				
+		# See if we are close to the goal
+		# make make the connection if we are and break - we have found the goal
+		idNear = FindNearest(rrtVertices, qGoal)
+		if np.linalg.norm(qGoal - rrtVertices[idNear]) < 0.025:
+			rrtVertices.append(qGoal)
+			rrtEdges.append(idNear)
+			FoundSolution = True
+			break
 
-
-
+	print(FoundSolution, len(rrtVertices))
 
 	### if a solution was found
 	if FoundSolution:
@@ -139,7 +183,34 @@ def RRTQuery():
 
 		# TODO - Path shortening
 		for i in range(150):
-			pass
+			# get a random value along the path (excluding the goal)
+			anchorA = np.random.randint(0, len(plan)-2)
+			# find another point between the first and the goal
+			anchorB = np.random.randint(anchorA+1, len(plan)-1)
+
+			# #! why??
+			shiftA = np.random.uniform(0, 1)
+			shiftB = np.random.uniform(0, 1)
+			
+			# print("a", plan[anchorA], type(plan[anchorA]))
+			# print("A+1", plan[anchorA+1], type(plan[anchorA+1]))
+			# print("B", plan[anchorB], type(plan[anchorB]))
+			# print("B+1", plan[anchorB+1], type(plan[anchorB+1]))
+			# print("==================================")
+
+			# candidate A & B are vertices on the path
+			candidateA = (1-shiftA)*np.asarray(plan[anchorA])+shiftA*np.asarray(plan[anchorA+1])
+			candidateB = (1-shiftB)*np.asarray(plan[anchorB])+shiftB*np.asarray(plan[anchorB+1])
+
+
+			if not mybot.DetectCollisionEdge(candidateA, candidateB, pointsObs, axesObs):
+				# remove the unnecessary points along the path between anchorA and anchorB
+				while anchorB>anchorA:
+					plan.pop(anchorB)
+					anchorB = anchorB-1
+				# replace the vertices on the path
+				plan.insert(anchorA+1, candidateB)
+				plan.insert(anchorA+1, candidateA)
 	
 		
 		for (i, q) in enumerate(plan):
